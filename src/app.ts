@@ -1,9 +1,14 @@
-import express from "express";
+import express, { Application, Request, Response } from "express";
+import { postRouter } from "./modules/post/post.router";
 
-const app = express();
+const app: Application = express();
+app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
   res.send("Hello World!");
 });
+
+// user related api
+app.use("/posts", postRouter);
 
 export default app;
