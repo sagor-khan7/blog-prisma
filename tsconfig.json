@@ -43,6 +43,6 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  // "include": ["src/**/*"],
-  // "exclude": ["node_modules", "dist", "src/generated"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "generated/prisma"]
 }
