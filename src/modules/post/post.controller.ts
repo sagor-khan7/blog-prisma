@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { postService } from "./post.service";
+import { PostStatus } from "../../../generated/prisma/enums";
 
 //? get all posts
 const getAllPost = async (req: Request, res: Response) => {
@@ -16,10 +17,21 @@ const getAllPost = async (req: Request, res: Response) => {
           ? false
           : undefined;
 
+    const status = req.query.status as PostStatus | undefined;
+    const ALLOWED_STATUSES = ["DRAFT", "PUBLISHED", "ARCHIVED"];
+
+    if (status && !ALLOWED_STATUSES.includes(status as string)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status parameter. Allowed values are ${ALLOWED_STATUSES.join(", ")}`,
+      });
+    }
+
     const result = await postService.getAllPost({
       search: searchString,
       tags,
       isFeatured,
+      status,
     });
 
     res.status(200).json(result);
