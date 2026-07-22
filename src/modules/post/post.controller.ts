@@ -27,11 +27,17 @@ const getAllPost = async (req: Request, res: Response) => {
       });
     }
 
+    const authorId =
+      typeof req.query.authorId === "string" && req.query.authorId.trim() !== ""
+        ? req.query.authorId
+        : undefined;
+
     const result = await postService.getAllPost({
       search: searchString,
       tags,
       isFeatured,
       status,
+      authorId,
     });
 
     res.status(200).json(result);
