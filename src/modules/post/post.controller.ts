@@ -34,7 +34,7 @@ const getAllPost = async (req: Request, res: Response) => {
         : undefined;
 
     const options = paginationSortingHelper(req.query);
-    const { limit, skip, sortBy, sortOrder } = options;
+    const { page, limit, skip, sortBy, sortOrder } = options;
 
     const result = await postService.getAllPost({
       search: searchString,
@@ -45,6 +45,7 @@ const getAllPost = async (req: Request, res: Response) => {
       limit,
       skip,
       sortBy,
+      page,
       sortOrder,
     });
 

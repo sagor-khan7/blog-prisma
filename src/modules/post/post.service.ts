@@ -13,6 +13,7 @@ const getAllPost = async ({
   skip,
   sortBy,
   sortOrder,
+  page,
 }: {
   search: string | undefined;
   tags: string[] | [];
@@ -23,6 +24,7 @@ const getAllPost = async ({
   skip: number;
   sortBy: string;
   sortOrder: string;
+  page: number;
 }) => {
   const andConditions: PostWhereInput[] = [];
   if (search) {
@@ -79,7 +81,22 @@ const getAllPost = async ({
       [sortBy]: sortOrder,
     },
   });
-  return result;
+
+  const total = await prisma.post.count({
+    where: {
+      AND: andConditions,
+    },
+  });
+
+  return {
+    data: result,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 //? create post
