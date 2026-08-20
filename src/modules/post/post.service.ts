@@ -36,26 +36,26 @@ const getAllPost = async ({
       OR: [
         {
           title: {
-            contains: search as string,
+            contains: search,
             mode: "insensitive",
           },
         },
         {
           content: {
-            contains: search as string,
+            contains: search,
             mode: "insensitive",
           },
         },
         {
           tags: {
-            has: search as string,
+            has: search,
           },
         },
       ],
     });
   }
 
-  if (tags.length > 0) {
+  if (tags && tags.length > 0) {
     andConditions.push({
       tags: {
         hasEvery: tags,
@@ -74,28 +74,27 @@ const getAllPost = async ({
   if (authorId) {
     andConditions.push({ authorId });
   }
+  const whereCondition: PostWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
 
-  const result = await prisma.post.findMany({
-    take: limit,
-    skip,
-    where: {
-      AND: andConditions,
-    },
-    orderBy: {
-      [sortBy]: sortOrder,
-    },
-    include: {
-      _count: {
-        select: { comments: true },
+  const [result, total] = await Promise.all([
+    prisma.post.findMany({
+      take: limit,
+      skip,
+      where: whereCondition,
+      orderBy: {
+        [sortBy]: sortOrder,
       },
-    },
-  });
-
-  const total = await prisma.post.count({
-    where: {
-      AND: andConditions,
-    },
-  });
+      include: {
+        _count: {
+          select: { comments: true },
+        },
+      },
+    }),
+    prisma.post.count({
+      where: whereCondition,
+    }),
+  ]);
 
   return {
     data: result,
@@ -125,19 +124,21 @@ const createPost = async (
 //? get post by id
 const getPostById = async (postId: string) => {
   return await prisma.$transaction(async (tx) => {
-    await tx.post.update({
-      where: {
-        id: postId,
-      },
-      data: {
-        views: {
-          increment: 1,
-        },
-      },
+    // 1. Verify post existence first to prevent runtime P2025 crash
+    const postExists = await tx.post.findUnique({
+      where: { id: postId },
+      select: { id: true },
     });
-    const postData = await tx.post.findUnique({
-      where: {
-        id: postId,
+
+    if (!postExists) {
+      return null;
+    }
+
+    // 2. Increment view count and return full post with comments
+    return await tx.post.update({
+      where: { id: postId },
+      data: {
+        views: { increment: 1 },
       },
       include: {
         comments: {
@@ -148,15 +149,11 @@ const getPostById = async (postId: string) => {
           orderBy: { createdAt: "desc" },
           include: {
             replies: {
-              where: {
-                status: CommentStatus.APPROVED,
-              },
+              where: { status: CommentStatus.APPROVED },
               orderBy: { createdAt: "asc" },
               include: {
                 replies: {
-                  where: {
-                    status: CommentStatus.APPROVED,
-                  },
+                  where: { status: CommentStatus.APPROVED },
                   orderBy: { createdAt: "asc" },
                 },
               },
@@ -166,12 +163,42 @@ const getPostById = async (postId: string) => {
         _count: { select: { comments: true } },
       },
     });
-    return postData;
   });
+};
+
+//? get all post for author
+const getMyPosts = async (authorId: string) => {
+  await prisma.user.findUniqueOrThrow({
+    where: {
+      id: authorId,
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const result = await prisma.post.findMany({
+    where: {
+      authorId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      _count: {
+        select: {
+          comments: true,
+        },
+      },
+    },
+  });
+  return result;
 };
 
 export const postService = {
   createPost,
   getAllPost,
   getPostById,
+  getMyPosts,
 };

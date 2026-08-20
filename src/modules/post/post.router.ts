@@ -4,13 +4,24 @@ import auth, { UserRole } from "../../middlewares/auth";
 
 const router = express.Router();
 
-//? router gor getting all posts
+//? route for getting all posts
 router.get("/", postController.getAllPost);
 
 //? route for creating post
-router.post("/", auth(UserRole.USER), postController.createPost);
+router.post(
+  "/",
+  auth(UserRole.USER, UserRole.ADMIN),
+  postController.createPost,
+);
 
-//? route for get post by id
+//? route for getting all of author's posts (MUST BE BEFORE /:postId)
+router.get(
+  "/my-posts",
+  auth(UserRole.USER, UserRole.ADMIN),
+  postController.getMyPosts,
+);
+
+//? route for getting post by id
 router.get("/:postId", postController.getPostById);
 
 export const postRouter: Router = router;
