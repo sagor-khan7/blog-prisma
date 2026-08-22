@@ -7,6 +7,9 @@ const router = express.Router();
 //? route for getting all posts
 router.get("/", postController.getAllPost);
 
+//? post stats
+router.get("/stats", auth(UserRole.ADMIN), postController.getStats);
+
 //? route for creating post
 router.post(
   "/",
