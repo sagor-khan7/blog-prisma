@@ -24,4 +24,11 @@ router.get(
 //? route for getting post by id
 router.get("/:postId", postController.getPostById);
 
+//? update post
+router.patch(
+  "/:postId",
+  auth(UserRole.USER, UserRole.ADMIN),
+  postController.updatePost,
+);
+
 export const postRouter: Router = router;
